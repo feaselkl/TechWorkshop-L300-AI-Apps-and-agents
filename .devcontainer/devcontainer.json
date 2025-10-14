@@ -1,5 +1,8 @@
 {
 	"image": "mcr.microsoft.com/devcontainers/universal:2",
+	"hostRequirements": {
+		"storage": "64gb"
+	},
 	"features": {
 		"ghcr.io/azure/azure-dev/azd:0": {},
 		"ghcr.io/rchaganti/vsc-devcontainer-features/azurebicep:1": {},
