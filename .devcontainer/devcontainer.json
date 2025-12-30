@@ -1,5 +1,5 @@
 {
-	"image": "mcr.microsoft.com/devcontainers/universal:4.1.1",
+	"image": "mcr.microsoft.com/devcontainers/universal:latest",
 	"hostRequirements": {
 		"storage": "32gb"
 	},
