@@ -116,9 +116,9 @@ app = FastAPI()
 #set up MCP inventory server as a mounted app
 # inventory_mcp_app = inventory_mcp.sse_app()
 # app.mount("/mcp-inventory/", inventory_mcp_app)
-project_endpoint = os.environ.get("AZURE_AI_AGENT_ENDPOINT")
+project_endpoint = os.environ.get("gpt_endpoint")
 if not project_endpoint:
-    raise ValueError("AZURE_AI_AGENT_ENDPOINT environment variable is required")
+    raise ValueError("gpt_endpoint environment variable is required")
 project_client = AIProjectClient(
     endpoint=project_endpoint,
     credential=DefaultAzureCredential(),
@@ -154,7 +154,7 @@ async def health_check():
             "phi_4_api_key": bool(validated_env_vars.get('phi_4_api_key')),
             "azure_openai_endpoint": bool(validated_env_vars.get('AZURE_OPENAI_ENDPOINT')),
             "azure_openai_key": bool(validated_env_vars.get('AZURE_OPENAI_KEY')),
-            "azure_ai_agent_endpoint": bool(os.environ.get("AZURE_AI_AGENT_ENDPOINT"))
+            "gpt_endpoint": bool(os.environ.get("gpt_endpoint"))
         }
     }
 

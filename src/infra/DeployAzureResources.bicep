@@ -41,8 +41,16 @@ var locations = [
 resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
   name: cosmosDbName
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   kind: 'GlobalDocumentDB'
   properties: {
+    capabilities: [
+      {
+        name: 'EnableNoSQLVectorSearch'
+      }
+    ]
     consistencyPolicy: {
       defaultConsistencyLevel: 'Session'
     }
@@ -203,13 +211,13 @@ resource appServiceApp 'Microsoft.Web/sites@2022-09-01' = {
 }
 
 // Cosmos DB built-in data plane role IDs
-// Reference: https://learn.microsoft.com/en-us/connectors/documentdb/#microsoft-entra-id-authentication-and-cosmos-db-connector
-var cosmosDbBuiltInDataReaderRoleId = '00000000-0000-0000-0000-000000000001'
+// Reference: https://learn.microsoft.com/connectors/documentdb/#microsoft-entra-id-authentication-and-cosmos-db-connector
+// var cosmosDbBuiltInDataReaderRoleId = '00000000-0000-0000-0000-000000000001'
 var cosmosDbBuiltInDataContributorRoleId = '00000000-0000-0000-0000-000000000002'
 
 // Azure RBAC role IDs
-// Reference: https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
-var cosmosDbAccountReaderRoleId = 'fbdf93bf-df7d-467e-a4d2-9458aa1360c8'
+// Reference: https://learn.microsoft.com/azure/role-based-access-control/built-in-roles
+// var cosmosDbAccountReaderRoleId = 'fbdf93bf-df7d-467e-a4d2-9458aa1360c8'
 var cognitiveServicesOpenAIUserRoleId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 var cognitiveServicesContributorRoleId = '25fbc0a9-bd7c-42a3-aa1a-3b75d497ee68'
 
