@@ -19,9 +19,9 @@ def load_env_vars() -> Dict[str, Optional[str]]:
         'gpt_deployment': os.getenv("gpt_deployment"),
         'gpt_api_key': os.getenv("gpt_api_key"),
         'gpt_api_version': os.getenv("gpt_api_version"),
-        'AZURE_OPENAI_ENDPOINT': os.getenv("AZURE_OPENAI_ENDPOINT"),
-        'AZURE_OPENAI_KEY': os.getenv("AZURE_OPENAI_KEY"),
-        'AZURE_OPENAI_API_VERSION': os.getenv("AZURE_OPENAI_API_VERSION"),
+        'FOUNDRY_ENDPOINT': os.getenv("FOUNDRY_ENDPOINT"),
+        'FOUNDRY_KEY': os.getenv("FOUNDRY_KEY"),
+        'FOUNDRY_API_VERSION': os.getenv("FOUNDRY_API_VERSION"),
         'MCP_SERVER_URL': os.getenv("MCP_SERVER_URL"),
     }
 
@@ -39,4 +39,4 @@ def validate_env_vars(env_vars: Dict[str, Optional[str]]) -> Dict[str, str]:
             validated_vars[key] = value  # type: ignore - we know it's not None after validation
         else:
             validated_vars[key] = value
-    return validated_vars 
+    return validated_vars

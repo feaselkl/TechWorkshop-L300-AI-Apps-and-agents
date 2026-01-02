@@ -2,6 +2,7 @@ import logging
 import json
 import os
 from typing import Any
+import requests
 
 from azure.cosmos import CosmosClient, PartitionKey
 from azure.identity import DefaultAzureCredential
@@ -16,6 +17,10 @@ COSMOS_KEY = os.environ.get("COSMOS_KEY")
 DATABASE_NAME = os.environ.get("DATABASE_NAME")
 CONTAINER_NAME = os.environ.get("CONTAINER_NAME")
 JSON_FILE = os.environ.get("JSON_FILE", "data/product_catalog.json")
+EMBEDDING_ENDPOINT = os.environ.get("embedding_endpoint")
+EMBEDDING_DEPLOYMENT = os.environ.get("embedding_deployment")
+EMBEDDING_API_KEY = os.environ.get("embedding_api_key")
+EMBEDDING_API_VERSION = os.environ.get("embedding_api_version")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
@@ -73,12 +78,28 @@ def ensure_string_ids(item: dict[str, Any]) -> dict[str, Any]:
     item["ProductID"] = str(product_id)
     item["id"] = str(product_id)
 
-    # Build content_for_vector similar to original script
-    name = str(item.get("ProductName", ""))
-    category = str(item.get("ProductCategory", ""))
-    desc = str(item.get("ProductDescription", ""))
-
     return item
+
+
+def get_request_embedding(text: str) -> list[float] | None:
+    """Call embedding endpoint and return the embedding vector or None on failure."""
+    if not EMBEDDING_ENDPOINT or not EMBEDDING_DEPLOYMENT or not EMBEDDING_API_KEY or not EMBEDDING_API_VERSION:
+        logger.error("Embedding env vars not fully set; failing embedding generation.")
+        return None
+
+    url = EMBEDDING_ENDPOINT.rstrip("/") + f"/openai/deployments/{EMBEDDING_DEPLOYMENT}/embeddings?api-version={EMBEDDING_API_VERSION}"
+    headers = {
+        "Content-Type": "application/json",
+        "api-key": EMBEDDING_API_KEY,
+    }
+    payload = {"input": text}
+
+    resp = requests.post(url, headers=headers, json=payload, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+    # Expecting Azure OpenAI style response: {"data":[{"embedding": [...]}, ...]}
+    embedding = data.get("data", [{}])[0].get("embedding")
+    return embedding
 
 
 def main() -> None:
@@ -100,6 +121,20 @@ def main() -> None:
     for raw in items:
         try:
             item = ensure_string_ids(dict(raw))
+
+            # Build text to embed from ProductName, ProductCategory, ProductDescription
+            name = str(item.get("ProductName", ""))
+            category = str(item.get("ProductCategory", ""))
+            desc = str(item.get("ProductDescription", ""))
+            content_for_vector = " \n ".join([p for p in (name, category, desc) if p])
+
+            try:
+                embedding = get_request_embedding(content_for_vector)
+                if embedding is not None:
+                    item["request_vector"] = embedding
+            except Exception as e:
+                logger.warning("Failed to generate embedding for ProductID %s: %s", item.get("ProductID"), e)
+
             container.upsert_item(body=item)
             print(f"Uploaded: ProductID {item['ProductID']}")
         except Exception as ex:

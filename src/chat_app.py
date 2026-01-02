@@ -125,9 +125,9 @@ project_client = AIProjectClient(
 )
 
 # llm_client = AzureOpenAI(
-#     azure_endpoint=validated_env_vars['AZURE_OPENAI_ENDPOINT'],
-#     api_key=validated_env_vars['AZURE_OPENAI_KEY'],
-#     api_version=validated_env_vars['AZURE_OPENAI_API_VERSION'],
+#     azure_endpoint=validated_env_vars['FOUNDRY_ENDPOINT'],
+#     api_key=validated_env_vars['FOUNDRY_KEY'],
+#     api_version=validated_env_vars['FOUNDRY_API_VERSION'],
 # )
 
 # handoff_service = HandoffService(
@@ -152,8 +152,8 @@ async def health_check():
         "environment_vars_configured": {
             "phi_4_endpoint": bool(validated_env_vars.get('phi_4_endpoint')),
             "phi_4_api_key": bool(validated_env_vars.get('phi_4_api_key')),
-            "azure_openai_endpoint": bool(validated_env_vars.get('AZURE_OPENAI_ENDPOINT')),
-            "azure_openai_key": bool(validated_env_vars.get('AZURE_OPENAI_KEY')),
+            "foundry_endpoint": bool(validated_env_vars.get('FOUNDRY_ENDPOINT')),
+            "foundry_key": bool(validated_env_vars.get('FOUNDRY_KEY')),
             "gpt_endpoint": bool(os.environ.get("gpt_endpoint"))
         }
     }
