@@ -9,10 +9,9 @@ def get_or_create_agent_processor(agent_id: str, agent_type: str, thread_id: str
     if cache_key in _agent_processor_cache:
         processor = _agent_processor_cache[cache_key]
         processor.thread_id = thread_id
-        processor.project_client.agents.enable_auto_function_calls(tools=processor.toolset)
         return processor
     processor = AgentProcessor(
-        project_client=project_client,  # project_client is now passed as an argument
+        project_client=project_client,
         assistant_id=agent_id,
         agent_type=agent_type,
         thread_id=thread_id

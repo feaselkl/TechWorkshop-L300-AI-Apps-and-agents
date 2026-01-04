@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def initialize_agent(project_client : AIProjectClient, model : str, name : str, description : str, instructions : str, toolset : List[Any]):
+def initialize_agent(project_client : AIProjectClient, model : str, name : str, description : str, instructions : str, tools : List[Any]):
     with project_client:
         agent = project_client.agents.create_version(
             agent_name=name,
@@ -13,7 +13,7 @@ def initialize_agent(project_client : AIProjectClient, model : str, name : str, 
             definition=PromptAgentDefinition(
                 model=model,
                 instructions=instructions,
-                tools=toolset
+                tools=tools
             )
         )
         print(f"Created {name} agent, ID: {agent.id}")

@@ -20,7 +20,7 @@ mcp dev mcp_inventory_client.py
 
 async def main():
     # Connect to the server using SSE
-    async with sse_client("http://localhost:8000/sse") as (read_stream, write_stream):
+    async with sse_client("http://localhost:8000/mcp-inventory/sse") as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             # Initialize the connection
             await session.initialize()
@@ -39,7 +39,7 @@ async def main():
             for tool in tools_result.tools:
                 print(f"  - {tool.name}: {tool.description}")
             # Call our calculator tool
-            result = await session.call_tool("product_recommendations", arguments={"question": "Paint for a kitchen wall should be white?"})
+            result = await session.call_tool("get_product_recommendations", arguments={"question": "Should paint for a kitchen wall be white?"})
             print(f"Product recommendations: {result.content[0].text}")
 
 

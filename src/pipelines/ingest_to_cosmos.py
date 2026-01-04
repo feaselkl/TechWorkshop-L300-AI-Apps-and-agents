@@ -132,6 +132,8 @@ def main() -> None:
                 embedding = get_request_embedding(content_for_vector)
                 if embedding is not None:
                     item["request_vector"] = embedding
+                else:
+                    logger.warning("No embedding returned for ProductID %s", item.get("ProductID"))
             except Exception as e:
                 logger.warning("Failed to generate embedding for ProductID %s: %s", item.get("ProductID"), e)
 

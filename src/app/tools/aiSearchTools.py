@@ -16,10 +16,10 @@ DATABASE_NAME = os.environ.get("DATABASE_NAME")
 CONTAINER_NAME = os.environ.get("CONTAINER_NAME")
 
 # Embedding service configuration (used to encode the query)
-EMBEDDING_ENDPOINT = os.environ.get("EMBEDDING_ENDPOINT")
-EMBEDDING_DEPLOYMENT = os.environ.get("EMBEDDING_DEPLOYMENT")
-EMBEDDING_API_KEY = os.environ.get("EMBEDDING_API_KEY")
-EMBEDDING_API_VERSION = os.environ.get("EMBEDDING_API_VERSION")
+EMBEDDING_ENDPOINT = os.environ.get("embedding_endpoint")
+EMBEDDING_DEPLOYMENT = os.environ.get("embedding_deployment")
+EMBEDDING_API_KEY = os.environ.get("embedding_api_key")
+EMBEDDING_API_VERSION = os.environ.get("embedding_api_version")
 
 # Validate required Cosmos env vars
 if not COSMOS_ENDPOINT:
@@ -97,7 +97,7 @@ def product_recommendations(question: str, top_k: int = 8):
         "SELECT c.id, c.ProductID, c.ProductName, c.ProductCategory, c.ProductDescription, "
         "c.ImageURL, c.ProductPunchLine, c.Price "
         "FROM c "
-        "ORDER BY VECTOR_DISTANCE(c.request_vector, @vector) "
+        "ORDER BY VECTORDISTANCE(c.request_vector, @vector) "
         "OFFSET 0 LIMIT @top"
     )
 
