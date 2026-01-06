@@ -12,6 +12,7 @@ from handoff_agent.py, providing:
 import logging
 import os
 import random
+import json
 from typing import Any, Dict, Optional, Tuple
 
 from openai import AzureOpenAI
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class IntentClassification(BaseModel):
     """Structured output for intent classification."""
+    model_config = {"extra": "forbid", "additionalProperties": False}
     domain: str = Field(
         description="Target domain: cora, interior_designer, inventory_agent, customer_loyalty, or cart_manager"
     )
@@ -61,39 +63,6 @@ AGENT_DOMAINS = {
         "description": "Shopping cart operations, adding/removing items, cart viewing, checkout assistance"
     }
 }
-
-# Intent classification prompt
-INTENT_CLASSIFIER_PROMPT = """You are an intent classifier for Zava shopping assistant.
-
-Available domains:
-1. cora: General shopping, product browsing, general questions
-2. interior_designer: Room design, decorating, color schemes, furniture recommendations, image creation
-3. inventory_agent: Product availability, stock checks, inventory questions
-4. customer_loyalty: Discounts, promotions, loyalty programs, customer benefits
-5. cart_manager: Shopping cart operations (add/remove items, view cart, checkout)
-
-Analyze the user's message and determine:
-1. Which domain it belongs to
-2. Whether it's a domain change from the current context
-
-Current domain: {current_domain}
-User message: {user_message}
-
-Respond with JSON:
-{{
-    "domain": "cora|interior_designer|inventory_agent|customer_loyalty|cart_manager",
-    "is_domain_change": true|false,
-    "confidence": 0.0-1.0,
-    "reasoning": "brief explanation"
-}}
-
-Rules:
-- If user mentions "cart", "add to cart", "remove from cart", "checkout", "view cart" -> cart_manager domain
-- If uncertain, default to current domain with low confidence
-- Detect explicit requests to "talk to someone else" or "get help with X" as domain changes
-- Consider context: if discussing design, stay in interior_designer unless user explicitly changes topic
-- Default to 'cora' for general/ambiguous queries
-"""
 
 
 class HandoffService:
@@ -150,6 +119,7 @@ class HandoffService:
         Returns:
             Dictionary with keys: domain, is_domain_change, confidence, reasoning, agent_id, agent_name
         """
+        print("Beginning intent classification...")
         current_domain = self._session_domains.get(session_id, None)
         
         # If no current domain, route to default
@@ -167,37 +137,50 @@ class HandoffService:
             }
         
         # Build classification prompt
-        prompt = INTENT_CLASSIFIER_PROMPT.format(
-            current_domain=current_domain,
-            user_message=user_message
-        )
+        prompt = f"""
+            Current domain: {current_domain}
+            User message: {user_message}
+        """
         
         try:
-            # Use beta API with structured output
-            completion = self.client.beta.chat.completions.parse(
-                model=self.deployment,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                response_format=IntentClassification,
+            print("Sending classification request to LLM...")
+            conversation = self.client.conversations.create(
+                items = [
+                    {
+                        "type": "message",
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
             )
+
+            print(f"Created conversation for classification: {conversation.id}")
+
+            response = self.client.responses.create(
+                conversation=conversation.id,
+                extra_body={"agent": {"name": "handoff-service", "type": "agent_reference"}},
+                input=""
+            )
+
+            print("Received classification response.")
             
             # Extract structured result
-            intent = completion.choices[0].message.parsed
+            intent = json.loads(response.output_text)
             
             result = {
-                "domain": intent.domain,
-                "is_domain_change": intent.is_domain_change,
-                "confidence": intent.confidence,
-                "reasoning": intent.reasoning,
-                "agent_id": intent.domain,
-                "agent_name": AGENT_DOMAINS.get(intent.domain, {}).get("name", "Unknown Agent")
+                "domain": intent["domain"],
+                "is_domain_change": intent["is_domain_change"],
+                "confidence": intent["confidence"],
+                "reasoning": intent["reasoning"],
+                "agent_id": intent["domain"],
+                "agent_name": AGENT_DOMAINS.get(intent["domain"], {}).get("name", "Unknown Agent")
             }
+            print("Updating session domain if changed...")
             
             # Update session domain if changed
-            if intent.is_domain_change:
-                self._session_domains[session_id] = intent.domain
-                logger.info(f"[HANDOFF_SERVICE] Domain change for session {session_id}: {current_domain} -> {intent.domain}")
+            if intent["is_domain_change"]:
+                self._session_domains[session_id] = intent["domain"]
+                logger.info(f"[HANDOFF_SERVICE] Domain change for session {session_id}: {current_domain} -> {intent['domain']}")
             
             logger.info(f"[HANDOFF_SERVICE] Intent classification: {result}")
             return result

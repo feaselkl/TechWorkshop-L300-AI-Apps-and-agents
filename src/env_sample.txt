@@ -2,13 +2,9 @@ OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="true"
 AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED="true"
 
 # Microsoft Foundry credentials
-AZURE_OPENAI_ENDPOINT=""
-AZURE_OPENAI_KEY=""
-AZURE_OPENAI_API_VERSION="2025-01-01-preview"
-
-AZURE_AI_AGENT_ENDPOINT=""
-AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME="gpt-5-mini"
-AZURE_AI_AGENT_API_VERSION="2025-01-01-preview"
+FOUNDRY_ENDPOINT=""
+FOUNDRY_KEY=""
+FOUNDRY_API_VERSION="2025-01-01-preview"
 
 # GPT credentials
 gpt_endpoint=""
@@ -21,6 +17,12 @@ phi_4_endpoint=""
 phi_4_deployment="Phi-4"
 phi_4_api_key=""
 phi_4_api_version="2024-05-01-preview"
+
+# Text-embedding-3-large credentials
+embedding_endpoint=""
+embedding_deployment="text-embedding-3-large"
+embedding_api_key=""
+embedding_api_version=""
 
 # Storage account credentials
 blob_connection_string=""
@@ -40,8 +42,9 @@ APPLICATIONINSIGHTS_CONNECTION_STRING=""
 MCP_SERVER_URL="http://localhost:8000/mcp-inventory/sse"
 
 # Agent IDs
-customer_loyalty=""
-inventory_agent=""
-interior_designer=""
-cora=""
-cart_manager=""
+customer_loyalty="customer-loyalty"
+inventory_agent="inventory-agent"
+interior_designer="interior-designer"
+cora="cora"
+cart_manager="cart-manager"
+handoff_service="handoff-service"

@@ -1,55 +1,118 @@
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from azure.search.documents import SearchClient
-from azure.core.credentials import AzureKeyCredential
+import requests
+from azure.cosmos import CosmosClient
+from azure.identity import DefaultAzureCredential
+from azure.core.exceptions import AzureError
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
-# Initialize Azure OpenAI and Azure Cognitive Search credentials
-SEARCH_ENDPOINT = os.environ.get("SEARCH_ENDPOINT")
-SEARCH_KEY = os.environ.get("SEARCH_KEY")
-INDEX_NAME = os.environ.get("INDEX_NAME")
+# Cosmos DB configuration (replace previous search env vars)
+COSMOS_ENDPOINT = os.environ.get("COSMOS_ENDPOINT")
+COSMOS_KEY = os.environ.get("COSMOS_KEY")
+DATABASE_NAME = os.environ.get("DATABASE_NAME")
+CONTAINER_NAME = os.environ.get("CONTAINER_NAME")
 
-# Validate that required environment variables are set
-if not SEARCH_ENDPOINT:
-    raise ValueError("SEARCH_ENDPOINT environment variable is not set")
-if not SEARCH_KEY:
-    raise ValueError("SEARCH_KEY environment variable is not set")
-if not INDEX_NAME:
-    raise ValueError("INDEX_NAME environment variable is not set")
+# Embedding service configuration (used to encode the query)
+EMBEDDING_ENDPOINT = os.environ.get("embedding_endpoint")
+EMBEDDING_DEPLOYMENT = os.environ.get("embedding_deployment")
+EMBEDDING_API_KEY = os.environ.get("embedding_api_key")
+EMBEDDING_API_VERSION = os.environ.get("embedding_api_version")
 
-# Initialize Azure Cognitive Search client
-credential = AzureKeyCredential(SEARCH_KEY)
-search_client = SearchClient(
-    endpoint=SEARCH_ENDPOINT,
-    index_name=INDEX_NAME,
-    credential=credential
-)
+# Validate required Cosmos env vars
+if not COSMOS_ENDPOINT:
+    raise ValueError("COSMOS_ENDPOINT environment variable is not set")
+if not DATABASE_NAME:
+    raise ValueError("DATABASE_NAME environment variable is not set")
+if not CONTAINER_NAME:
+    raise ValueError("CONTAINER_NAME environment variable is not set")
 
-# Main function to provide product recommendations with inventory check
-def product_recommendations(question):
-    """
-    Input: 
-        question (str): Natural language user query
-    Output:
-        products_with_inventory (list): Product json with product information
-    """
 
-    semantic_configuration_name = INDEX_NAME + "-semantic-configuration"
-    
-    # Step 1: Search
-    search_results = search_client.search(
-        search_text=question,
-        query_type="semantic",
-        semantic_configuration_name=semantic_configuration_name,
-        top=8
+def get_cosmos_client(endpoint: str | None, key: str | None = None):
+    if not endpoint:
+        raise ValueError("COSMOS_ENDPOINT must be provided in environment variables")
+
+    # Try Entra ID (managed identity) first
+    try:
+        credential = DefaultAzureCredential()
+        client = CosmosClient(endpoint, credential=credential)
+        _ = list(client.list_databases())
+        return client
+    except AzureError:
+        pass
+
+    # Fallback to key
+    if key:
+        client = CosmosClient(endpoint, key)
+        return client
+
+    raise RuntimeError(
+        "Failed to authenticate to Cosmos DB using DefaultAzureCredential and no valid COSMOS_KEY was provided"
     )
 
-    print(search_results)
 
-    # Step 2: Build response (optimized)
+def get_request_embedding(text: str) -> list[float] | None:
+    """Call embedding endpoint and return the embedding vector or None on failure."""
+    if not EMBEDDING_ENDPOINT or not EMBEDDING_DEPLOYMENT or not EMBEDDING_API_KEY or not EMBEDDING_API_VERSION:
+        raise ValueError("Embedding endpoint configuration missing. Set EMBEDDING_ENDPOINT, EMBEDDING_DEPLOYMENT, EMBEDDING_API_KEY, EMBEDDING_API_VERSION")
+
+    url = EMBEDDING_ENDPOINT.rstrip("/") + f"/openai/deployments/{EMBEDDING_DEPLOYMENT}/embeddings?api-version={EMBEDDING_API_VERSION}"
+    headers = {
+        "Content-Type": "application/json",
+        "api-key": EMBEDDING_API_KEY,
+    }
+    payload = {"input": text}
+
+    resp = requests.post(url, headers=headers, json=payload, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+    embedding = data.get("data", [{}])[0].get("embedding")
+    return embedding
+
+
+# Initialize Cosmos client and container
+_cosmos_client = get_cosmos_client(COSMOS_ENDPOINT, COSMOS_KEY)
+_database = _cosmos_client.get_database_client(DATABASE_NAME)
+_container = _database.get_container_client(CONTAINER_NAME)
+
+
+def product_recommendations(question: str, top_k: int = 8):
+    """
+    Input:
+        question (str): Natural language user query
+        top_k (int): number of nearest neighbors to return
+    Output:
+        list of product dicts with product information
+    """
+
+    # Generate embedding for the query
+    query_vector = get_request_embedding(question)
+    if query_vector is None:
+        raise RuntimeError("Failed to generate query embedding")
+
+    # Cosmos DB vector search SQL. Requires Cosmos account with vector search enabled
+    query = (
+        "SELECT c.id, c.ProductID, c.ProductName, c.ProductCategory, c.ProductDescription, "
+        "c.ImageURL, c.ProductPunchLine, c.Price "
+        "FROM c "
+        "ORDER BY VECTORDISTANCE(c.request_vector, @vector) "
+        "OFFSET 0 LIMIT @top"
+    )
+
+    parameters = [
+        {"name": "@vector", "value": query_vector},
+        {"name": "@top", "value": top_k},
+    ]
+
+    items = list(_container.query_items(
+        query=query,
+        parameters=parameters,
+        enable_cross_partition_query=True,
+        max_item_count=top_k
+    ))
+
     get = dict.get
     response = [
         {
@@ -61,6 +124,7 @@ def product_recommendations(question):
             "punchLine": get(item, "ProductPunchLine", None),
             "price": get(item, "Price", None)
         }
-        for item in search_results
+        for item in items
     ]
+
     return response

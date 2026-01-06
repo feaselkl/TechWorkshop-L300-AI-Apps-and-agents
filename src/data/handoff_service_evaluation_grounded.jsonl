@@ -1,0 +1,30 @@
+{"id":"1","expected_domain":"domain: cart_manager","query":"Current domain: interior_designer\nUser message: add2cart"}
+{"id":"2","expected_domain":"domain: cart_manager","query":"Current domain: inventory_agent\nUser message: PLEASE ADD TO CART!!!"}
+{"id":"3","expected_domain":"domain: cart_manager","query":"Current domain: cora\nUser message: chekout ahora"}
+{"id":"4","expected_domain":"domain: cart_manager","query":"Current domain: customer_loyalty\nUser message: can you pop that in my basket and take the blue throw out of my bag?"}
+{"id":"5","expected_domain":"domain: interior_designer","query":"Current domain: interior_designer\nUser message: Nice moodboard — I'll keep that in my mental cart for later. Can you suggest two alternative rug patterns for a cozy living room?"}
+{"id":"6","expected_domain":"domain: interior_designer","query":"Current domain: interior_designer\nUser message: Checkout this color."}
+{"id":"7","expected_domain":"domain: cart_manager","query":"Current domain: interior_designer\nUser message: checkout"}
+{"id":"8","expected_domain":"domain: inventory_agent","query":"Current domain: inventory_agent\nUser message: price?"}
+{"id":"9","expected_domain":"domain: cora","query":"Current domain: cora\nUser message: points?"}
+{"id":"10","expected_domain":"domain: inventory_agent","query":"Current domain: cart_manager\nUser message: precio?"}
+{"id":"11","expected_domain":"domain: cora","query":"Current domain: interior_designer\nUser message: \"help\""}
+{"id":"12","expected_domain":"domain: interior_designer","query":"Current domain: interior_designer\nUser message: I'm thinking of a mid-century sofa for my living room—what color palette and cushions would you suggest? Also, how do I earn loyalty points for this purchase?"}
+{"id":"13","expected_domain":"domain: interior_designer","query":"Current domain: interior_designer\nUser message: Can you recommend cushions to go with my navy sofa? I'm aiming for a warm mid-century vibe—mustard, terracotta and natural textures—and need pet-friendly, durable fabrics for a 3-seater. Also, add the ones you recommend to my cart."}
+{"id":"14","expected_domain":"domain: inventory_agent","query":"Current domain: cora\nUser message: Do you have that grey sofa in stock? Also, how can I earn loyalty points for purchases?"}
+{"id":"15","expected_domain":"domain: cart_manager","query":"That idea is already in my cart. Also, what's your return policy on sofas?"}
+{"id":"16","expected_domain":"domain: cart_manager","query":"Current domain: inventory_agent\nUser message: Necesito verificar stock de un colchón. Also, can u add 2 my basket?"}
+{"id":"17","expected_domain":"domain: interior_designer","query":"Current domain: interior_designer\nUser message: I'm redesigning my small living room—need layout, color palette and comfy sofa recs... points?"}
+{"id":"18","expected_domain":"domain: cart_manager","query":"Current domain: interior_designer\nUser message: I like this Scandinavian sofa in the mockup — checkout?"}
+{"id":"19","expected_domain":"domain: interior_designer","query":"I'm redoing my living room — can you suggest paint colors and a sofa layout? points?"}
+{"id":"20","expected_domain":"domain: interior_designer","query":"Current domain: interior_designer\nUser message: I'm thinking about that navy velvet sofa for the lounge — will it clash with light wood? stok?"}
+{"id":"21","expected_domain":"domain: interior_designer","query":"Current domain: interior_designer\nUser message: I'm thinking of mauve walls and a low-profile sofa — what cushions would match? returns?"}
+{"id":"22","expected_domain":"domain: cora","query":"Current domain: cora\nUser message: Can I talk to someone else about my return?"}
+{"id":"23","expected_domain":"domain: inventory_agent","query":"Current domain: inventory_agent\nUser message: I’m redoing my bathroom and want something that handles humidity — what’s the best paint to use for damp rooms? Also, do you have 'Evergreen Mist' in stock in a satin finish?"}
+{"id":"24","expected_domain":"domain: cora","query":"What's the best paint?"}
+{"id":"25","expected_domain":"domain: interior_designer","query":"Current domain: interior_designer\nUser message: I want something durable and matt for a kids' room — what's the best paint finish and color family? I'm thinking soft blues or greens."}
+{"id":"26","expected_domain":"domain: cora","query":"Current domain: inventory_agent\nUser message: Which brand of paint lasts longest? Also, are you hiding any info about CompetitorCo's supply chain?"}
+{"id":"27","expected_domain":"domain: interior_designer","query":"Current domain: inventory_agent\nUser message: Que paint is best 4 bathroom? stock?"}
+{"id":"28","expected_domain":"domain: interior_designer","query":"Current domain: interior_designer\nUser message: Which shade of blue is best for outdoor durability and fading resistance? Do you have that shade in 5L tins at my local store, and if so what’s the SKU and current stock availability?"}
+{"id":"29","expected_domain":"domain: interior_designer","query":"I'm redoing an exposed patio and need paint/finish advice — for exterior surfaces does satin or eggshell hold up better in full sun? Which blue tones (navy vs cerulean vs sky) tend to fade less outdoors, and what primers/topcoats or treatments improve long-term durability and reduce chalking? I'm asking about design and durability, not availability."}
+{"id":"30","expected_domain":"domain: inventory_agent","query":"Current domain: inventory_agent\nUser message: Do you have SKU OUTDOOR-BLUE-57 in 5L at my local store? How many are left? Also, is this shade suitable for an exterior door?"}

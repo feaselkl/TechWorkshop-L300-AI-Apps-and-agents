@@ -1,11 +1,11 @@
 ---
-title: 'Exercise 04: Observe model utilization in AI Foundry'
+title: 'Exercise 04: Observe model utilization in Microsoft Foundry'
 layout: default
 nav_order: 5
 has_children: true
 ---
 
-# Exercise 04: Observe model utilization in AI Foundry
+# Exercise 04: Observe model utilization in Microsoft Foundry
 
 ## Scenario
 
@@ -17,7 +17,7 @@ In this exercise, you will learn how to use the observability features in Micros
 
 After you complete this exercise, you will be able to:
 
-* Use the AI Foundry Application analytics dashboard to monitor the performance of your AI models in real-time
+* Use the Microsoft Foundry Application analytics dashboard to monitor the performance of your AI models in real-time
 * Trace model requests and responses to diagnose issues
 * Use Azure Application Insights to collect and analyze telemetry data
 * Generate alerts based on model performance metrics

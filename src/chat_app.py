@@ -116,19 +116,19 @@ app = FastAPI()
 #set up MCP inventory server as a mounted app
 # inventory_mcp_app = inventory_mcp.sse_app()
 # app.mount("/mcp-inventory/", inventory_mcp_app)
-project_endpoint = os.environ.get("AZURE_AI_AGENT_ENDPOINT")
+project_endpoint = os.environ.get("FOUNDRY_ENDPOINT")
 if not project_endpoint:
-    raise ValueError("AZURE_AI_AGENT_ENDPOINT environment variable is required")
+    raise ValueError("FOUNDRY_ENDPOINT environment variable is required")
 project_client = AIProjectClient(
     endpoint=project_endpoint,
     credential=DefaultAzureCredential(),
 )
 
-# llm_client = AzureOpenAI(
-#     azure_endpoint=validated_env_vars['AZURE_OPENAI_ENDPOINT'],
-#     api_key=validated_env_vars['AZURE_OPENAI_KEY'],
-#     api_version=validated_env_vars['AZURE_OPENAI_API_VERSION'],
-# )
+# # LLM client for the handoff service.
+# # Retrieves an AzureOpenAI client from the project client.
+# # Handoff service determines which agent to route to based on intent classification.
+# # The default for this is Cora, the general shopping assistant.
+# llm_client = project_client.get_openai_client()
 
 # handoff_service = HandoffService(
 #     azure_openai_client=llm_client,
@@ -152,9 +152,9 @@ async def health_check():
         "environment_vars_configured": {
             "phi_4_endpoint": bool(validated_env_vars.get('phi_4_endpoint')),
             "phi_4_api_key": bool(validated_env_vars.get('phi_4_api_key')),
-            "azure_openai_endpoint": bool(validated_env_vars.get('AZURE_OPENAI_ENDPOINT')),
-            "azure_openai_key": bool(validated_env_vars.get('AZURE_OPENAI_KEY')),
-            "azure_ai_agent_endpoint": bool(os.environ.get("AZURE_AI_AGENT_ENDPOINT"))
+            "foundry_endpoint": bool(validated_env_vars.get('FOUNDRY_ENDPOINT')),
+            "foundry_key": bool(validated_env_vars.get('FOUNDRY_KEY')),
+            "gpt_endpoint": bool(os.environ.get("gpt_endpoint"))
         }
     }
 
@@ -165,10 +165,10 @@ async def websocket_endpoint(websocket: WebSocket):
     logger.info("WebSocket Session Started")
     
     await websocket.accept()
-    thread = project_client.agents.threads.create()
+
     chat_history: Deque[Tuple[str, str]] = deque(maxlen=5)
-    customer_loyalty_thread = project_client.agents.threads.create()
-    
+
+    # Session-level state variables
     customer_loyalty_executed = False               # Flag to track if customer loyalty task has been executed
     session_discount_percentage = ""                # Session-level variable to track discount_percentage
     session_loyalty_response = None                 # Store the full loyalty response for later
@@ -193,7 +193,7 @@ async def websocket_endpoint(websocket: WebSocket):
             processor = get_or_create_agent_processor(
                 agent_id=customer_loyalty_id,
                 agent_type="customer_loyalty",
-                thread_id=customer_loyalty_thread.id,
+                thread_id=None,
                 project_client=project_client
             )
             bot_reply = ""
@@ -350,9 +350,9 @@ async def websocket_endpoint(websocket: WebSocket):
             #         logger.info("Image analysis completed")
                 
             #     # =============================================================================
-            #     # PRODUCT RECOMMENDATIONS: AI Search integration for contextual products
+            #     # PRODUCT RECOMMENDATIONS: Cosmos DB integration for contextual products
             #     # =============================================================================
-            #     # For agents that make product recommendations, query AI Search with enriched
+            #     # For agents that make product recommendations, query Cosmos DB with enriched
             #     # context (user message + visual analysis). This provides the agent with
             #     # relevant product options to suggest based on user needs and visual context.
             #     # =============================================================================
@@ -487,8 +487,8 @@ async def websocket_endpoint(websocket: WebSocket):
             #         processor = get_or_create_agent_processor(
             #             agent_id=agent_selected,     # Agent ID from environment variables
             #             agent_type=agent_name,       # Agent type (cora, cart_manager, etc.)
-            #             thread_id=thread.id,         # Conversation thread for stateful agents
-            #             project_client=project_client  # Azure AI client for agent execution
+            #             thread_id=None,              # Conversation thread for stateful agents
+            #             project_client=project_client  # Foundry client for agent execution
             #         )
                     
             #         # Stream response from agent (yields chunks as they're generated)

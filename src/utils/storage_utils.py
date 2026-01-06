@@ -1,5 +1,5 @@
 """
-Azure Storage utilities for AI Foundry integration
+Azure Storage utilities for Microsoft Foundry integration
 Provides helper functions for accessing Azure Blob Storage using Managed Identity
 """
 
@@ -46,7 +46,7 @@ class StorageManager:
         account_url = f"https://{self.storage_account_name}.blob.core.windows.net"
         
         try:
-            # Try Managed Identity first (works in AI Foundry, App Service, etc.)
+            # Try Managed Identity first (works in Microsoft Foundry, App Service, etc.)
             logger.info("Attempting authentication with DefaultAzureCredential (Managed Identity)")
             credential = DefaultAzureCredential()
             return BlobServiceClient(account_url=account_url, credential=credential)
@@ -203,7 +203,7 @@ def upload_file_to_blob(file_path: str, blob_name: str = None, content_type: str
     with open(file_path, 'rb') as file_data:
         return storage_manager.upload_blob(blob_name, file_data, content_type)
 
-# Example usage for AI Foundry
+# Example usage for Microsoft Foundry
 if __name__ == "__main__":
     # Example: List all blobs
     storage_manager = get_storage_manager()

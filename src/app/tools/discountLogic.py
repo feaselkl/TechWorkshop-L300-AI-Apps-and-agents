@@ -19,10 +19,10 @@ application_insights_connection_string = os.environ["APPLICATIONINSIGHTS_CONNECT
 # tracer = trace.get_tracer(__name__)
 
 #Azure OpenAI
-endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+endpoint = os.getenv("gpt_endpoint")
 deployment = os.getenv("gpt_deployment")
-api_key = os.getenv("AZURE_OPENAI_KEY")
-api_version = os.getenv("AZURE_OPENAI_API_VERSION")
+api_key = os.getenv("gpt_api_key")
+api_version = os.getenv("gpt_api_version")
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))  # Go up 2 levels from src/tools/ to root
