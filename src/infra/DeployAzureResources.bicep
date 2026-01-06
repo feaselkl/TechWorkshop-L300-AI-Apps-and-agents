@@ -95,7 +95,7 @@ resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
   }
   kind: 'AIServices'
   properties: {
-    // required to work in AI Foundry
+    // required to work in Microsoft Foundry
     allowProjectManagement: true 
 
     // Defines developer API endpoint subdomain
@@ -244,7 +244,7 @@ resource cosmosDbProjectOpenAIUserRole 'Microsoft.Authorization/roleAssignments@
   }
 }
 
-@description('Assigns Cognitive Services OpenAI User role to Cosmos DB on AI Foundry')
+@description('Assigns Cognitive Services OpenAI User role to Cosmos DB on Microsoft Foundry')
 resource cosmosDbFoundryOpenAIUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(aiFoundry.id, cosmosDbAccount.id, cognitiveServicesOpenAIUserRoleId)
   scope: aiFoundry

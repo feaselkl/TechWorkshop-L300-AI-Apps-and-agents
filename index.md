@@ -15,7 +15,7 @@ This lab has exercises on:
 * Deploy and configure resources
 * Implement a multimodal AI shopping assistant
 * Extend the shopping assistant using the A2A Protocol
-* Observe model utilization in AI Foundry
+* Observe model utilization in Microsoft Foundry
 * Agentic DevOps
 * Red Teaming AI Agents
 * Resource cleanup
