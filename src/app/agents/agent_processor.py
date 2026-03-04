@@ -1,5 +1,6 @@
 import os
 import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import List, Callable, Set, Any, Dict
 from azure.ai.projects.models import FunctionTool
@@ -9,19 +10,31 @@ import json
 # Import MCP client for tool execution
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from app.servers.mcp_inventory_client import MCPShopperToolsClient
 
 from opentelemetry import trace
-from azure.monitor.opentelemetry import configure_azure_monitor
-from azure.ai.agents.telemetry import trace_function
+
+# from azure.monitor.opentelemetry import configure_azure_monitor
+try:
+    from azure.ai.agents.telemetry import trace_function
+except ImportError:
+
+    def trace_function():
+        def decorator(func):
+            return func
+
+        return decorator
+
+
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import time
 # from opentelemetry.instrumentation.openai_v2 import OpenAIInstrumentor
 
 # # Enable Azure Monitor tracing
-application_insights_connection_string = os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"]
+application_insights_connection_string = os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING", "")
 # configure_azure_monitor(connection_string=application_insights_connection_string)
 # OpenAIInstrumentor().instrument()
 
@@ -38,52 +51,54 @@ from app.servers.mcp_inventory_client import get_mcp_client
 
 _mcp_server_url = os.getenv("MCP_SERVER_URL", "http://localhost:8000/mcp-inventory/sse")
 
+
 # MCP-based tool wrapper functions
 async def mcp_create_image(prompt: str) -> str:
     """
     Generate an AI image based on a text description using DALL-E.
-    
+
     Args:
         prompt: Detailed description of the image to generate
         size: Image size (e.g., '1024x1024'), defaults to '1024x1024'
-    
+
     Returns:
         URL or path to the generated image
     """
-    
+
     mcp_client = await get_mcp_client(_mcp_server_url)
     """Wrapper for create_image using MCP client"""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        result = loop.run_until_complete(
-            mcp_client.call_tool("generate_product_image", {"prompt": prompt})
-        )
+        result = loop.run_until_complete(mcp_client.call_tool("generate_product_image", {"prompt": prompt}))
         return result
     finally:
         loop.close()
 
+
 def mcp_product_recommendations(question: str) -> str:
     """
     Search for product recommendations based on user query.
-    
+
     Args:
         question: Natural language user query describing what products they're looking for
-    
+
     Returns:
         Product details including ID, name, category, description, image URL, and price
     """
+
     async def _get_product_recommendations():
         mcp_client = await get_mcp_client(_mcp_server_url)
         results = await mcp_client.call_tool("get_product_recommendations", {"question": question})
         return results
+
     # Run async function in event loop
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     return loop.run_until_complete(_get_product_recommendations())
 
 
@@ -93,35 +108,38 @@ def mcp_calculate_discount(customer_id: str) -> str:
 
     Args:
         CustomerID (str): The ID of the customer.
-    
+
     Returns:
         float: The calculated discount amount and percentage.
     """
+
     async def _calculate():
         mcp_client = await get_mcp_client(_mcp_server_url)
         discount = await mcp_client.call_tool("get_customer_discount", {"customer_id": customer_id})
         return discount
-    
+
     # Run async function in event loop
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     return loop.run_until_complete(_calculate())
+
 
 # Create wrapper function that uses MCP client
 def mcp_inventory_check(product_list: List[str]) -> list:
     """
     Check inventory for products using MCP client.
-    
+
     Args:
         product_list (List[str]): List of product IDs to check inventory for.
-    
+
     Returns:
         list: Each element is the inventory info for the product ID if found, otherwise None.
     """
+
     async def _check_inventory():
         mcp_client = await get_mcp_client(_mcp_server_url)
         results = []
@@ -133,15 +151,16 @@ def mcp_inventory_check(product_list: List[str]) -> list:
                 print(f"Error checking inventory for {product_id}: {e}")
                 results.append(None)
         return results
-    
+
     # Run async function in event loop
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
+
     return loop.run_until_complete(_check_inventory())
+
 
 class AgentProcessor:
     def __init__(self, project_client, assistant_id, agent_type: str, thread_id=None):
@@ -149,7 +168,7 @@ class AgentProcessor:
         self.agent_id = assistant_id
         self.agent_type = agent_type
         self.thread_id = thread_id
-        
+
         # Use cached toolset or create new one
         self.toolset = self._get_or_create_toolset(agent_type)
 
@@ -157,13 +176,13 @@ class AgentProcessor:
         """Get cached toolset or create new one to avoid repeated initialization."""
         if agent_type in _toolset_cache:
             return _toolset_cache[agent_type]
-        
+
         functions = create_function_tool_for_agent(agent_type)
-        
+
         # Cache the toolset
         _toolset_cache[agent_type] = functions
         return functions
-    
+
     def run_conversation_with_text(self, input_message: str = ""):
         print("Running async!")
         start_time = time.time()
@@ -172,13 +191,10 @@ class AgentProcessor:
         if thread_id:
             conversation = openai_client.conversations.retrieve(conversation_id=thread_id)
             openai_client.conversations.items.create(
-                conversation_id=thread_id,
-                items=[{"type": "message", "role": "user", "content": input_message}]
+                conversation_id=thread_id, items=[{"type": "message", "role": "user", "content": input_message}]
             )
         else:
-            conversation = openai_client.conversations.create(
-                items=[{"role": "user", "content": input_message}]
-            )
+            conversation = openai_client.conversations.create(items=[{"role": "user", "content": input_message}])
             thread_id = conversation.id
             self.thread_id = thread_id
         print(f"[TIMELOG] Message creation took: {time.time() - start_time:.2f}s")
@@ -186,7 +202,7 @@ class AgentProcessor:
             conversation=thread_id,
             extra_body={"agent": {"name": self.agent_id, "type": "agent_reference"}},
             input="",
-            stream=True
+            stream=True,
         )
         for message in messages:
             yield message.response.output_text
@@ -197,7 +213,7 @@ class AgentProcessor:
         thread_id = self.thread_id
         start_time = time.time()
         print("Running sync!")
-        
+
         try:
             openai_client = self.project_client.get_openai_client()
             # Create message
@@ -205,14 +221,11 @@ class AgentProcessor:
                 print(f"Using existing thread_id: {thread_id}")
                 conversation = openai_client.conversations.retrieve(conversation_id=thread_id)
                 openai_client.conversations.items.create(
-                    conversation_id=thread_id,
-                    items=[{"type": "message", "role": "user", "content": input_message}]
+                    conversation_id=thread_id, items=[{"type": "message", "role": "user", "content": input_message}]
                 )
             else:
                 print("Creating new conversation thread")
-                conversation = openai_client.conversations.create(
-                    items=[{"role": "user", "content": input_message}]
-                )
+                conversation = openai_client.conversations.create(items=[{"role": "user", "content": input_message}])
                 print("Conversation created:", conversation)
                 thread_id = conversation.id
                 self.thread_id = thread_id
@@ -223,7 +236,7 @@ class AgentProcessor:
                 conversation=thread_id,
                 extra_body={"agent": {"name": self.agent_id, "type": "agent_reference"}},
                 input="",
-                stream=False
+                stream=False,
             )
 
             messages_start = time.time()
@@ -232,7 +245,7 @@ class AgentProcessor:
             if len(message.output_text) == 0:
                 print("[DEBUG] No output text found in message. Looking for function calls.")
                 # No output text, check for function calls
-                input_list : ResponseInputParam = []
+                input_list: ResponseInputParam = []
                 for item in message.output:
                     if item.type == "function_call":
                         # Perform the function call first, then extract final text value below
@@ -248,11 +261,13 @@ class AgentProcessor:
                             func_result = f"Unknown function: {item.name}"
                         print(f"[DEBUG] Function {item.name} executed with result: {func_result}")
 
-                        input_list.append(FunctionCallOutput(
-                            type="function_call_output",
-                            call_id=item.call_id,
-                            output=json.dumps({"result": func_result})
-                        ))
+                        input_list.append(
+                            FunctionCallOutput(
+                                type="function_call_output",
+                                call_id=item.call_id,
+                                output=json.dumps({"result": func_result}),
+                            )
+                        )
 
                 # Re-run response creation to get final text output after function calls
                 print("[DEBUG] Re-running response creation to get final text output after function calls.")
@@ -262,30 +277,29 @@ class AgentProcessor:
                     extra_body={"agent": {"name": self.agent_id, "type": "agent_reference"}},
                 )
 
-
             # Robustly extract all text values from all blocks
             content = message.output_text
             if isinstance(content, list):
                 text_blocks = []
                 for j, block in enumerate(content):
                     if isinstance(block, dict):
-                        text_val = block.get('text', {}).get('value')
+                        text_val = block.get("text", {}).get("value")
                         if text_val:
                             text_blocks.append(text_val)
-                    elif hasattr(block, 'text'):
-                        if hasattr(block.text, 'value'):
+                    elif hasattr(block, "text"):
+                        if hasattr(block.text, "value"):
                             text_val = block.text.value
                             if text_val:
                                 text_blocks.append(text_val)
                 if text_blocks:
                     # Join all text blocks with newlines if multiple
-                    result = ['\n'.join(text_blocks)]
+                    result = ["\n".join(text_blocks)]
                     return result
-            
+
             # Fallback: return stringified content
             result = [str(content)]
             return result
-                
+
         except Exception as e:
             print(f"[ERROR] Conversation failed: {str(e)}")
             return [f"Error processing message: {str(e)}"]
@@ -295,9 +309,7 @@ class AgentProcessor:
         print(f"[DEBUG] Async conversation pipeline initiated - commencing message processing protocol", flush=True)
         loop = asyncio.get_event_loop()
         try:
-            messages = await loop.run_in_executor(
-                _executor, self._run_conversation_sync, input_message
-            )
+            messages = await loop.run_in_executor(_executor, self._run_conversation_sync, input_message)
             for i, msg in enumerate(messages):
                 yield msg
         except Exception as e:
@@ -313,79 +325,67 @@ class AgentProcessor:
     @classmethod
     def get_cache_stats(cls):
         """Get cache statistics for monitoring."""
-        return {
-            "toolset_cache_size": len(_toolset_cache),
-            "cached_agent_types": list(_toolset_cache.keys())
-        }
+        return {"toolset_cache_size": len(_toolset_cache), "cached_agent_types": list(_toolset_cache.keys())}
+
 
 def create_function_tool_for_agent(agent_type: str) -> List[Any]:
-    define_mcp_create_image =FunctionTool(
-            name="mcp_create_image",
-            parameters={
-                "type": "object",
-                "properties": {
-                    "prompt": {
-                        "type": "string",
-                        "description": "Detailed description of the image to generate"
-                    }
-                },
-                "required": ["prompt"],
-                "additionalProperties": False
+    define_mcp_create_image = FunctionTool(
+        name="mcp_create_image",
+        parameters={
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string", "description": "Detailed description of the image to generate"}
             },
-            description="Generate an AI image based on a text description using the GPT image model of choice.",
-            strict=True
-        )
+            "required": ["prompt"],
+            "additionalProperties": False,
+        },
+        description="Generate an AI image based on a text description using the GPT image model of choice.",
+        strict=True,
+    )
     define_mcp_product_recommendations = FunctionTool(
         name="mcp_product_recommendations",
         parameters={
             "type": "object",
             "properties": {
-                    "question": {
-                        "type": "string",
-                        "description": "Natural language user query describing what products they're looking for"
-                    }
-                },
-                "required": ["question"],
-                "additionalProperties": False
+                "question": {
+                    "type": "string",
+                    "description": "Natural language user query describing what products they're looking for",
+                }
             },
-            description="Search for product recommendations based on user query.",
-            strict=True
-        )
+            "required": ["question"],
+            "additionalProperties": False,
+        },
+        description="Search for product recommendations based on user query.",
+        strict=True,
+    )
     define_mcp_calculate_discount = FunctionTool(
         name="mcp_calculate_discount",
         parameters={
             "type": "object",
-            "properties": {
-                    "customer_id": {
-                        "type": "string",
-                        "description": "The ID of the customer."
-                    }
-                },
-                "required": ["customer_id"],
-                "additionalProperties": False
-            },
-            description="Calculate the discount based on customer data.",
-            strict=True
-        )
+            "properties": {"customer_id": {"type": "string", "description": "The ID of the customer."}},
+            "required": ["customer_id"],
+            "additionalProperties": False,
+        },
+        description="Calculate the discount based on customer data.",
+        strict=True,
+    )
     define_mcp_inventory_check = FunctionTool(
         name="mcp_inventory_check",
         parameters={
             "type": "object",
             "properties": {
-                    "product_list": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "List of product IDs to check inventory for."
-                    }
-                },
+                "product_list": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of product IDs to check inventory for.",
+                }
+            },
             "required": ["product_list"],
-            "additionalProperties": False
+            "additionalProperties": False,
         },
         description="Check inventory for a product using MCP client.",
-        strict=True
-        )
+        strict=True,
+    )
 
     functions = []
 
