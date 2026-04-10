@@ -44,7 +44,7 @@ def get_request_embedding(text: str) -> list[float] | None:
         raise ValueError("Embedding endpoint configuration missing. Set EMBEDDING_ENDPOINT, EMBEDDING_DEPLOYMENT, EMBEDDING_API_VERSION")
 
     url = EMBEDDING_ENDPOINT.rstrip("/") + f"/openai/deployments/{EMBEDDING_DEPLOYMENT}/embeddings?api-version={EMBEDDING_API_VERSION}"
-    token = credential.get_token("https://cognitiveservices.azure.com/.default")
+    token = credential.get_token("https://services.ai.azure.com/.default")
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token.token}",
